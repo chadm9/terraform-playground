@@ -1,3 +1,14 @@
+/*
+Terraform proof of concept for deploying an internal http load balancer (ilb)
+with a severless network endpoint group (NEG) backend exposing a Cloud Run service.
+The components of this PoC are derived from the following tutorial:
+https://cloud.google.com/load-balancing/docs/l7-internal/setting-up-l7-internal-serverless#gcloud_1
+
+See here for an architecture diagram:
+https://cloud.google.com/static/load-balancing/images/lb-serverless-simple-int-https.svg
+*/
+
+
 
 #############################
 # Supporting Infrastructure #
