@@ -83,7 +83,7 @@ resource "google_compute_firewall" "fw-iap" {
 
 /*
 --OPTIONAL--
-Create a firewall rule allowing all egress from the vpc.  This is ensures
+Create a firewall rule allowing all egress from the vpc.  This ensures
 that vm-test can curl the ilb for testing purposes, but may be overly broad
 for real use cases depending on security requirements.
 */
@@ -141,9 +141,9 @@ and properly referenced.
 */
 
 /*
-Create the required proxy only subnet for load balancer
-source ip addresses as seen by backends. Only one is needed per
-region and is capable of supporting multiple envoy based lbs.
+Create the required proxy only subnet for load balancer source ip
+addresses as seen by backends. Only one is needed per region, and
+one proxy only subnet is capable of supporting multiple envoy based lbs.
 https://cloud.google.com/load-balancing/docs/proxy-only-subnets
 */
 resource "google_compute_subnetwork" "proxy_subnet" {
