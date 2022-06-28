@@ -34,6 +34,7 @@ According to GCP:
 to set up a regional load balancer with a serverless backend."
 https://cloud.google.com/load-balancing/docs/l7-internal/setting-up-l7-internal-serverless#gcloud_1
 */
+# Create the required VM instance
 resource "google_compute_instance" "vm-test" {
   project      = var.project_id
   name         = "l7-ilb-test-vm"
@@ -53,8 +54,8 @@ resource "google_compute_instance" "vm-test" {
 
 /*
 --OPTIONAL--
-Create a firewall rule to whitelist access from IAP so the required GCE instance (see
-google_compute_instance.vm-test), which has no external ip, is accessible via ssh
+Create a firewall rule to whitelist access from IAP so the required GCE
+instance (see above), which has no external ip, is accessible via ssh
 (assuming the user trying to ssh has the proper roles assigned, e.g., editor).
 */
 resource "google_compute_firewall" "fw-iap" {
@@ -104,8 +105,8 @@ resource "google_cloud_run_service_iam_member" "member" {
 
 /*
 Infrastructure which directly defines the internal HTTP ILB and its serverless
-Cloud Run NEG.  If creating ensure the Supporing Infrastructure is created and
-properly referenced.
+Cloud Run NEG.  If creating, ensure the Supporting Infrastructure is already in place
+and properly referenced.
 */
 
 /*
