@@ -81,6 +81,26 @@ resource "google_compute_firewall" "fw-iap" {
   }
 }
 
+/*
+--OPTIONAL--
+Create a firewall rule allowing all egress from the vpc.  This is ensures
+that vm-test can curl the ilb for testing purposes, but may be overly broad
+for real use cases depending on security requirements.
+*/
+resource "google_compute_firewall" "project_firewall_allow_egress" {
+
+  project     = var.project_id
+  name        = "allow-all-egress"
+  description = "Allow egress from VPC by default"
+  network     = google_compute_network.ilb_network.id
+  priority    = "65535"
+  direction   = "EGRESS"
+
+  allow {
+    protocol = "all"
+  }
+}
+
 # Create a Cloud Run service
 resource "google_cloud_run_service" "default" {
   name     = "hello-service"
