@@ -29,7 +29,7 @@ resource "google_compute_network" "ilb_network" {
   auto_create_subnetworks = false
 }
 
-# Create a subnet for the 'required' (see below) GCE instance
+# Create a subnet for the 'required' (see below) VM instance
 resource "google_compute_subnetwork" "ilb_subnet" {
   name          = "l7-ilb-subnet"
   provider      = google-beta
