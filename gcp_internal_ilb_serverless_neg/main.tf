@@ -157,13 +157,23 @@ resource "google_compute_subnetwork" "proxy_subnet" {
   network       = google_compute_network.ilb_network.id
 }
 
+# Reserve a static internal ip address for the ilb
+resource "google_compute_address" "l7-ilb-reserved-ip" {
+  name          = "l7-ilb-reserved-ip"
+  subnetwork    = google_compute_subnetwork.ilb_subnet.id
+  address_type  = "INTERNAL"
+  description   = "A reserved static internal ip for use by the Cloud Run ilb"
+  region        = var.region
+  project       = var.project_id
+}
+
 # Create the ilb forwarding rule
 resource "google_compute_forwarding_rule" "google_compute_forwarding_rule" {
+  depends_on            = [google_compute_subnetwork.proxy_subnet]
   project               = var.project_id
   name                  = "l7-ilb-forwarding-rule"
-  provider              = google-beta
   region                = "us-east1"
-  depends_on            = [google_compute_subnetwork.proxy_subnet]
+  ip_address            = google_compute_address.l7-ilb-reserved-ip.address
   ip_protocol           = "TCP"
   load_balancing_scheme = "INTERNAL_MANAGED"
   port_range            = "80"
