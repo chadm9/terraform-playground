@@ -219,7 +219,7 @@ resource "google_compute_region_target_http_proxy" "default" {
 /*
 Create the ilb URL map.  All default_service fields are required. To reach the cloud
 run services from the ilb, an http request must be sent to the ilb ip address with path
-'/service1' for service 1, and '/service2' for service two.  Additionally, the host
+'/service1' for service2, and '/service2' for service2.  Additionally, the host
 header option must be passed in the http request ('test.com' in the example below).
 
 As an example, from inside the vcp, executing this curl command
@@ -269,7 +269,7 @@ resource "google_compute_region_url_map" "default" {
   }
 }
 
-# Create the backend service for cloud run service 1
+# Create the backend service for cloud run service1
 resource "google_compute_region_backend_service" "service1" {
   project               = var.project_id
   name                  = "l7-ilb-backend-service1"
@@ -284,7 +284,7 @@ resource "google_compute_region_backend_service" "service1" {
   }
 }
 
-# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service 1.
+# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service1
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg_1" {
   project               = var.project_id
   provider              = google-beta
@@ -296,7 +296,7 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg_1" {
   }
 }
 
-# Create the backend service for cloud run service 2
+# Create the backend service for cloud run service2
 resource "google_compute_region_backend_service" "service2" {
   project               = var.project_id
   name                  = "l7-ilb-backend-service2"
@@ -311,7 +311,7 @@ resource "google_compute_region_backend_service" "service2" {
   }
 }
 
-# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service 2.
+# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service2
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg_2" {
   project               = var.project_id
   provider              = google-beta
