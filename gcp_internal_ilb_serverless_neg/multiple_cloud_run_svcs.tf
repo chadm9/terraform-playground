@@ -220,7 +220,8 @@ resource "google_compute_region_target_http_proxy" "default" {
 Create the ilb URL map.  All default_service fields are required. To reach the cloud
 run services from the ilb, an http request must be sent to the ilb ip address with path
 '/service1' for service1, and '/service2' for service2.  Additionally, the host
-header option must be passed in the http request ('test.com' in the example below).
+header option (the host header is required in HTTP 1.1 and beyond anyway) must be passed
+in the http request (value 'test.com' in the example below).
 
 As an example, from inside the vpc, executing this curl command
 
