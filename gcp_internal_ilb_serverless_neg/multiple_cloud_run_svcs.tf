@@ -226,18 +226,18 @@ As an example, from inside the vpc, executing this curl command
 
 curl --header 'Host: test.com' 10.0.1.2/service1/
 
-will make a GET request to cloud run service service1 with path '/service1'
+will make a GET request to cloud run service 'service1' with path '/service1'
 and a host header field of 'test.com' (note in the above example 10.0.1.2 is the
 ip of the ilb).
 
 curl --header 'Host: test.com' 10.0.1.2/service2/test
 
-will make a GET request to cloud run service service2 with path '/service2'
+will make a GET request to cloud run service 'service2' with path '/service2'
 and a host header field of 'test.com'
 
 curl --header 'Host: test.com' 10.0.1.2/service2/test
 
-will make a GET request to cloud run service service2 with path '/service2/test'
+will make a GET request to cloud run service 'service2' with path '/service2/test'
 and a host header field of 'test.com'
 */
 resource "google_compute_region_url_map" "default" {
@@ -268,7 +268,7 @@ resource "google_compute_region_url_map" "default" {
   }
 }
 
-# Create the backend service for cloud run service1
+# Create the backend service for cloud run service 'service1'
 resource "google_compute_region_backend_service" "service1" {
   project               = var.project_id
   name                  = "l7-ilb-backend-service1"
@@ -283,7 +283,7 @@ resource "google_compute_region_backend_service" "service1" {
   }
 }
 
-# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service1
+# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service 'service1'
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg_1" {
   project               = var.project_id
   provider              = google-beta
@@ -295,7 +295,7 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg_1" {
   }
 }
 
-# Create the backend service for cloud run service2
+# Create the backend service for cloud run service 'service2'
 resource "google_compute_region_backend_service" "service2" {
   project               = var.project_id
   name                  = "l7-ilb-backend-service2"
@@ -310,7 +310,7 @@ resource "google_compute_region_backend_service" "service2" {
   }
 }
 
-# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service2
+# Create the Cloud Run Network Endpoint Group (NEG) for cloud run service 'service2'
 resource "google_compute_region_network_endpoint_group" "cloudrun_neg_2" {
   project               = var.project_id
   provider              = google-beta
