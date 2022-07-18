@@ -225,13 +225,13 @@ in the http request (value 'test.com' in the example below).
 
 As an example, from inside the vpc, executing this curl command
 
-curl --header 'Host: test.com' 10.0.1.2/service1/
+curl --header 'Host: test.com' 10.0.1.2/service1
 
 will make a GET request to cloud run service 'service1' with path '/service1'
 and a host header field of 'test.com' (note in the above example 10.0.1.2 is the
 ip of the ilb).
 
-curl --header 'Host: test.com' 10.0.1.2/service2/test
+curl --header 'Host: test.com' 10.0.1.2/service2
 
 will make a GET request to cloud run service 'service2' with path '/service2'
 and a host header field of 'test.com'
