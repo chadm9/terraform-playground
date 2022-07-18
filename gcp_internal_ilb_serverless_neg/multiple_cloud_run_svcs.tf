@@ -222,7 +222,7 @@ run services from the ilb, an http request must be sent to the ilb ip address wi
 '/service1' for service2, and '/service2' for service2.  Additionally, the host
 header option must be passed in the http request ('test.com' in the example below).
 
-As an example, from inside the vcp, executing this curl command
+As an example, from inside the vpc, executing this curl command
 
 curl --header 'Host: test.com' 10.0.1.2/service1/
 
