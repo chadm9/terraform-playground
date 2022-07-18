@@ -1,6 +1,6 @@
 /*
-Terraform proof of concept for deploying an internal http load balancer (ilb)
-to two severless network endpoint groups (NEG) backend exposing two Cloud Run services.
+Terraform proof of concept for deploying an internal http load balancer (ilb) which routes
+to two severless network endpoint group (NEG) backends, each exposing a different Cloud Run service.
 The components of this PoC are derived from the following tutorial:
 https://cloud.google.com/load-balancing/docs/l7-internal/setting-up-l7-internal-serverless#gcloud_1
 
@@ -130,8 +130,8 @@ resource "google_cloud_run_service" "service2" {
 }
 
 /*
-Allow anyone (i.e. allUsers) to invoke the first Cloud Run service
-GET request to its HTTP(s) endpoint
+Allow anyone (i.e. allUsers) to invoke the first Cloud Run service by making an
+HTTP(s) request endpoint
 */
 resource "google_cloud_run_service_iam_member" "member1" {
   location = google_cloud_run_service.service1.location
@@ -142,8 +142,8 @@ resource "google_cloud_run_service_iam_member" "member1" {
 }
 
 /*
-Allow anyone (i.e. allUsers) to invoke the second Cloud Run service
-GET request to its HTTP(s) endpoint
+Allow anyone (i.e. allUsers) to invoke the second Cloud Run service by making an
+HTTP(s) request endpoint
 */
 resource "google_cloud_run_service_iam_member" "member2" {
   location = google_cloud_run_service.service2.location
@@ -161,8 +161,7 @@ resource "google_cloud_run_service_iam_member" "member2" {
 
 /*
 Infrastructure which directly defines the internal HTTP ILB and its serverless
-Cloud Run NEG.  If creating, ensure the Supporting Infrastructure is already in place
-and properly referenced.
+Cloud Run NEGs.
 */
 
 /*
@@ -225,11 +224,22 @@ header option must be passed in the http request ('test.com' in the example belo
 
 As an example, from inside the vcp, executing this curl command
 
+curl --header 'Host: test.com' 10.0.1.2/service1/
+
+will make a GET request to cloud run service1 with path '/service1'
+and a host header field of 'test.com' (note in the above example 10.0.1.2 is the
+ip of the ilb).
+
+curl --header 'Host: test.com' 10.0.1.2/service2/test
+
+will make a GET request to cloud run service2 with path '/service2'
+and a host header field of 'test.com'
+
 curl --header 'Host: test.com' 10.0.1.2/service2/test
 
 will make a GET request to cloud run service 2 with path '/service2/test'
-and a host header field of 'test.com' (note in the above example 10.0.1.2 is the
-ip of the ilb).
+and a host header field of 'test.com'
+
 */
 resource "google_compute_region_url_map" "default" {
   project         = var.project_id
