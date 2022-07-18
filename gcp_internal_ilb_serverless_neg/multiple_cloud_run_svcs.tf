@@ -226,20 +226,19 @@ As an example, from inside the vpc, executing this curl command
 
 curl --header 'Host: test.com' 10.0.1.2/service1/
 
-will make a GET request to cloud run service1 with path '/service1'
+will make a GET request to cloud run service service1 with path '/service1'
 and a host header field of 'test.com' (note in the above example 10.0.1.2 is the
 ip of the ilb).
 
 curl --header 'Host: test.com' 10.0.1.2/service2/test
 
-will make a GET request to cloud run service2 with path '/service2'
+will make a GET request to cloud run service service2 with path '/service2'
 and a host header field of 'test.com'
 
 curl --header 'Host: test.com' 10.0.1.2/service2/test
 
-will make a GET request to cloud run service 2 with path '/service2/test'
+will make a GET request to cloud run service service2 with path '/service2/test'
 and a host header field of 'test.com'
-
 */
 resource "google_compute_region_url_map" "default" {
   project         = var.project_id
