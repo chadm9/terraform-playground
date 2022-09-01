@@ -45,6 +45,7 @@ resource "google_compute_subnetwork" "default" {
   region        = var.region
   project       = var.project_id
   network       = google_compute_network.default.name
+  private_ip_google_access = true
 }
 
 /*
@@ -136,6 +137,39 @@ resource "google_cloud_run_service_iam_member" "member" {
   member   = "allUsers"
 }
 
+# Create a Cloud Run service
+resource "google_cloud_run_service" "default2" {
+  name     = "goodbye"
+  location = var.region
+  project  = var.project_id
+
+  metadata {
+    annotations = {
+      "run.googleapis.com/ingress" = "internal"
+    }
+  }
+
+  template {
+    spec {
+      containers {
+        image = "gcr.io/cloudrun/hello"
+      }
+    }
+  }
+}
+
+/*
+Allow anyone (i.e. allUsers) to invoke a Cloud Run container by issuing a
+GET request to its HTTP(s) endpoint
+*/
+resource "google_cloud_run_service_iam_member" "member2" {
+  location = google_cloud_run_service.default2.location
+  project  = google_cloud_run_service.default2.project
+  service  = google_cloud_run_service.default2.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 
 
 #############################
@@ -175,7 +209,7 @@ resource "google_compute_address" "default" {
   project       = var.project_id
 }
 
-# Regional forwarding rule
+# Create the ilb forwarding rule
 resource "google_compute_forwarding_rule" "default" {
   name                  = "l7-ilb-forwarding-rule"
   region                = "us-east1"
@@ -227,7 +261,7 @@ resource "google_compute_region_ssl_certificate" "default" {
   }
 }
 
-# Regional target HTTPS proxy
+# Create the ilb HTTPS target proxy
 resource "google_compute_region_target_https_proxy" "default" {
   name             = "l7-ilb-target-https-proxy"
   region           = "us-east1"
@@ -269,16 +303,17 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
   /*
   The following code configures a URL mask to access multiple Cloud Run services.
   To hit a Cloud Run service, an HTTP request should be made to the internal load
-  balancer ip passing a host header value which is the name of the service.  For
-  example, if the load balancer ip 10.0.1.2, and the Cloud Run service is named
-  'hello', the following curl command will reach the service:
+  balancer ip with a path corresponding to the name of the Cloud Run service
+  (i.e. https://<load-balancer-ip>/<name-of-cloud-run-service>).  For example,
+  if the load balancer ip 10.0.1.2, and the Cloud Run service is named 'hello',
+  the following curl command will reach the service:
 
-  curl --header 'Host: hello' -k https://10.0.1.2
+  curl -ik https://10.0.1.2/hello
 
   (note the '-k' in the above is to stop curl from complaining about
   the self-signed cert)
   */
   cloud_run {
-    url_mask = "<service>"
+    url_mask = "/<service>"
   }
 }
