@@ -146,7 +146,6 @@ resource "google_logging_metric" "log_based_metric" {
     metric_kind = "DELTA"
     value_type  = "INT64"
     labels {
-      // Note for JSON-based GCP logs we should look instead at jsonPayload
       key         = "text_payload"
       value_type  = "STRING"
       description = "the log event statement"
