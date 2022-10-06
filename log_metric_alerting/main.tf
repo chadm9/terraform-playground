@@ -135,6 +135,7 @@ resource "google_monitoring_notification_channel" "default" {
   }
 }
 
+// Create the log based metric
 resource "google_logging_metric" "log_based_metric" {
   for_each = var.policies
 
@@ -152,13 +153,18 @@ resource "google_logging_metric" "log_based_metric" {
     }
   }
   label_extractors = {
-    // Note for JSON-based GCP logs we should look instead at jsonPayload
+    /*
+    This extracts the log text into a label so it can be easily included in an email.
+    Note for JSON-based GCP logs we should look instead at 'jsonPayload'
+    */
     "text_payload" = "EXTRACT(textPayload)"
   }
 }
 
+// Create the alert policy
 resource "google_monitoring_alert_policy" "alert_policy" {
   for_each = var.policies
+  // Make certain the metrics to alert on have been created
   depends_on = [google_logging_metric.log_based_metric]
 
   project               = var.project_id
