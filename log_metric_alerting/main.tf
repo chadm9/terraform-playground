@@ -123,7 +123,7 @@ resource "google_compute_firewall" "project_firewall_allow_egress" {
 }
 
 /*
---EVERYTHING BEYOND THIS POINT DEALS DIRECTLY WITH LOG BASED METRIC ALERTING--
+--EVERYTHING BELOW THIS LINE DEALS DIRECTLY WITH LOG BASED METRIC ALERTING--
 */
 
 // Create a notification channel for the alert based on email
@@ -134,50 +134,6 @@ resource "google_monitoring_notification_channel" "default" {
     email_address = var.notification_email_address
   }
 }
-
-
-#resource "google_logging_metric" "logging_metric" {
-#  project = var.project_id
-#  name   = "test-log-based-metric"
-#  filter = "log_name=(projects/neon-nexus-297211/logs/syslog) AND textPayload:\"hello\""
-#  metric_descriptor {
-#    metric_kind = "DELTA"
-#    value_type  = "INT64"
-#    labels {
-#      key         = "text_payload"
-#      value_type  = "STRING"
-#      description = "the textPayload property value of the log event"
-#    }
-#  }
-#  label_extractors = {
-#    "text_payload" = "EXTRACT(textPayload)"
-#  }
-#}
-#
-#resource "google_monitoring_alert_policy" "alert_policy" {
-#  project = var.project_id
-#  notification_channels = [google_monitoring_notification_channel.email-me.name]
-#  display_name = "Test Alert Policy"
-#  combiner     = "OR"
-#  conditions {
-#    display_name = "log statement appeared" // This will show up in the email
-#    condition_threshold {
-#      aggregations {
-#        alignment_period = "60s"
-#        per_series_aligner = "ALIGN_DELTA"
-#      }
-#      filter     = "metric.type=\"logging.googleapis.com/user/test-log-based-metric\" AND resource.type=\"gce_instance\""
-#      duration   = "0s"
-#      comparison = "COMPARISON_GT"
-#      threshold_value = 0
-#    }
-#  }
-#  documentation {
-#    mime_type = "text/markdown"
-#    content = "This is from terraform"
-#  }
-#}
-
 
 resource "google_logging_metric" "log_based_metric" {
   for_each = var.policies
@@ -203,6 +159,7 @@ resource "google_logging_metric" "log_based_metric" {
 
 resource "google_monitoring_alert_policy" "alert_policy" {
   for_each = var.policies
+  depends_on = [google_logging_metric.log_based_metric]
 
   project               = var.project_id
   notification_channels = [google_monitoring_notification_channel.default.name]
