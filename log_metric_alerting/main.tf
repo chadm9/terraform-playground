@@ -1,12 +1,35 @@
+/*
+This script is a proof of concept for creating alerts from log-based metrics in GCP.
+The alerts herein will fire when a specified log statement appears in GCP Cloud Logging
+one or more times within a specified (alignment_period) timeframe. The notification
+channel for the alert is set to email.
+
+In this POC, additional infrastructure which is not related to log-based
+metric alerts is also provisioned for the purposes of demoing/testing.  This includes
+a test VM with the Stackdriver logging agent installed and configured to write it's
+Linux system logs (syslog) to GCP Cloud Logging, and the networking infrastructure
+to support and ssh into said VM.
+*/
+
+
+
+/*
+--OPTIONAL TEST INFRASTRUCTURE USED FOR DEMO/TESTING ONLY--
+Create a vpc network to deploy the test VM into
+*/
 resource "google_compute_network" "network" {
-  provider                = google-beta
-  project                 = var.project_id # Replace this with your project ID in quotes
-  name                    = "psa-test"
+  // provider                = google-beta
+  project                 = var.project_id
+  name                    = "test-vpc"
   auto_create_subnetworks = false
 }
 
+/*
+--OPTIONAL TEST INFRASTRUCTURE USED FOR DEMO/TESTING ONLY--
+Create a subnet to deploy the test VM into
+*/
 resource "google_compute_subnetwork" "subnetwork" {
-  provider                 = google-beta
+  // provider                 = google-beta
   project                  = google_compute_network.network.project
   name                     = "test-subnetwork"
   ip_cidr_range            = "10.2.0.0/24"
@@ -15,20 +38,33 @@ resource "google_compute_subnetwork" "subnetwork" {
   private_ip_google_access = true
 }
 
+/*
+--OPTIONAL TEST INFRASTRUCTURE USED FOR DEMO/TESTING ONLY--
+Create a test VM and pass a startup script which installs
+the Stackdriver logging agent, and configures Linux syslogs
+to be forwarded to GCP Cloud Logging.  When SSH'd into this
+VM, executing the command:
+
+logger "<some-log-statement>"
+
+will write the contents of <some-log-statement> to Cloud Logging
+under a log named 'syslog'
+*/
 resource "google_compute_instance" "test_vm" {
   project      = var.project_id
   name         = "test-vm"
-  provider     = google-beta
+ // provider     = google-beta
   zone         = "us-east1-b"
   machine_type = "f1-micro"
   network_interface {
     network    = google_compute_network.network.id
     subnetwork = google_compute_subnetwork.subnetwork.id
 
+    // Creates an ephemeral public IP for the VM to provide a route to the internet
     access_config {
-      // Ephemeral public IP
     }
   }
+  // This startup script installs and conifigures the GCP logging agent
   metadata_startup_script = templatefile("${path.module}/startup.sh", {})
 
   boot_disk {
@@ -37,13 +73,16 @@ resource "google_compute_instance" "test_vm" {
     }
   }
   service_account {
-    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
     scopes = ["cloud-platform"]
   }
   allow_stopping_for_update = true
 }
 
-resource "google_compute_firewall" "fw-iap" {
+/*
+--OPTIONAL TEST INFRASTRUCTURE USED FOR DEMO/TESTING ONLY--
+Allow ssh access into the VM through GCP's Identity Aware Proxy service
+*/
+resource "google_compute_firewall" "fw_iap" {
   project       = var.project_id
   name          = "allow-iap-ingress"
   provider      = google-beta
@@ -55,11 +94,16 @@ resource "google_compute_firewall" "fw-iap" {
   }
 }
 
-resource "google_compute_firewall" "project_firewall_deny_egress" {
+/*
+--OPTIONAL TEST INFRASTRUCTURE USED FOR DEMO/TESTING ONLY--
+Allow egress to the internet to enable downloading of required
+package information
+*/
+resource "google_compute_firewall" "project_firewall_allow_egress" {
 
   project     = var.project_id
   name        = "allow-all-egress"
-  description = "Deny egress from VPC by default"
+  description = "Allow egress from VPC by default"
   network     = google_compute_network.network.id
   priority    = "65535"
   direction   = "EGRESS"
@@ -78,53 +122,107 @@ resource "google_compute_firewall" "project_firewall_deny_egress" {
   }
 }
 
+/*
+--EVERYTHING BEYOND THIS POINT DEALS DIRECTLY WITH LOG BASED METRIC ALERTING--
+*/
 
-resource "google_logging_metric" "logging_metric" {
+// Create a notification channel for the alert based on email
+resource "google_monitoring_notification_channel" "default" {
+  display_name = "Email Notification Channel"
+  type = "email"
+  labels = {
+    email_address = var.notification_email_address
+  }
+}
+
+
+#resource "google_logging_metric" "logging_metric" {
+#  project = var.project_id
+#  name   = "test-log-based-metric"
+#  filter = "log_name=(projects/neon-nexus-297211/logs/syslog) AND textPayload:\"hello\""
+#  metric_descriptor {
+#    metric_kind = "DELTA"
+#    value_type  = "INT64"
+#    labels {
+#      key         = "text_payload"
+#      value_type  = "STRING"
+#      description = "the textPayload property value of the log event"
+#    }
+#  }
+#  label_extractors = {
+#    "text_payload" = "EXTRACT(textPayload)"
+#  }
+#}
+#
+#resource "google_monitoring_alert_policy" "alert_policy" {
+#  project = var.project_id
+#  notification_channels = [google_monitoring_notification_channel.email-me.name]
+#  display_name = "Test Alert Policy"
+#  combiner     = "OR"
+#  conditions {
+#    display_name = "log statement appeared" // This will show up in the email
+#    condition_threshold {
+#      aggregations {
+#        alignment_period = "60s"
+#        per_series_aligner = "ALIGN_DELTA"
+#      }
+#      filter     = "metric.type=\"logging.googleapis.com/user/test-log-based-metric\" AND resource.type=\"gce_instance\""
+#      duration   = "0s"
+#      comparison = "COMPARISON_GT"
+#      threshold_value = 0
+#    }
+#  }
+#  documentation {
+#    mime_type = "text/markdown"
+#    content = "This is from terraform"
+#  }
+#}
+
+
+resource "google_logging_metric" "log_based_metric" {
+  for_each = var.policies
+
   project = var.project_id
-  name   = "test-log-based-metric"
-  filter = "log_name=(projects/neon-nexus-297211/logs/syslog) AND textPayload:\"hello\""
+  name   = "${each.value.event_name}-metric"
+  filter = each.value.cloud_logging_query
   metric_descriptor {
     metric_kind = "DELTA"
     value_type  = "INT64"
     labels {
+      // Note for JSON-based GCP logs we should look instead at jsonPayload
       key         = "text_payload"
       value_type  = "STRING"
-      description = "the textPayload property value of the log event"
+      description = "the log event statement"
     }
   }
   label_extractors = {
+    // Note for JSON-based GCP logs we should look instead at jsonPayload
     "text_payload" = "EXTRACT(textPayload)"
   }
 }
 
 resource "google_monitoring_alert_policy" "alert_policy" {
-  project = var.project_id
-  notification_channels = [google_monitoring_notification_channel.email-me.name]
-  display_name = "Test Alert Policy"
-  combiner     = "OR"
+  for_each = var.policies
+
+  project               = var.project_id
+  notification_channels = [google_monitoring_notification_channel.default.name]
+  display_name          = "${each.value.event_name}-alert"
+  combiner              = "OR"
   conditions {
-    display_name = "log statement appeared" // This will show up in the email
+    display_name = "${each.value.event_name}-alert"
     condition_threshold {
       aggregations {
-        alignment_period = "60s"
+        alignment_period = var.alignment_period
         per_series_aligner = "ALIGN_DELTA"
       }
-      filter     = "metric.type=\"logging.googleapis.com/user/test-log-based-metric\" AND resource.type=\"gce_instance\""
+      filter     = "metric.type=\"logging.googleapis.com/user/${each.value.event_name}-metric\" AND resource.type=\"${each.value.resource_type}\""
       duration   = "0s"
       comparison = "COMPARISON_GT"
-      threshold_value = 0
+      threshold_value = var.alert_threshold
     }
   }
   documentation {
     mime_type = "text/markdown"
-    content = "This is from terraform"
-  }
-}
-
-resource "google_monitoring_notification_channel" "email-me" {
-  display_name = "Email Me"
-  type = "email"
-  labels = {
-    email_address = "chadm_@yahoo.com"
+    content = each.value.documentation
   }
 }
