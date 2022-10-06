@@ -18,7 +18,6 @@ to support and ssh into said VM.
 Create a vpc network to deploy the test VM into
 */
 resource "google_compute_network" "network" {
-  // provider                = google-beta
   project                 = var.project_id
   name                    = "test-vpc"
   auto_create_subnetworks = false
@@ -29,7 +28,6 @@ resource "google_compute_network" "network" {
 Create a subnet to deploy the test VM into
 */
 resource "google_compute_subnetwork" "subnetwork" {
-  // provider                 = google-beta
   project                  = google_compute_network.network.project
   name                     = "test-subnetwork"
   ip_cidr_range            = "10.2.0.0/24"
@@ -53,7 +51,6 @@ under a log named 'syslog'
 resource "google_compute_instance" "test_vm" {
   project      = var.project_id
   name         = "test-vm"
- // provider     = google-beta
   zone         = "us-east1-b"
   machine_type = "f1-micro"
   network_interface {
@@ -85,7 +82,6 @@ Allow ssh access into the VM through GCP's Identity Aware Proxy service
 resource "google_compute_firewall" "fw_iap" {
   project       = var.project_id
   name          = "allow-iap-ingress"
-  provider      = google-beta
   direction     = "INGRESS"
   network       = google_compute_network.network.id
   source_ranges = ["130.211.0.0/22", "35.191.0.0/16", "35.235.240.0/20"]
